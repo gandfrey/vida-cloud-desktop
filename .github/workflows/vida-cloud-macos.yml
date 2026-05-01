@@ -30,7 +30,21 @@ jobs:
         run: |
           brew update
           brew install qt@6 openssl@3 cmake ninja libzip extra-cmake-modules \
-                       qtkeychain inkscape pkg-config
+                       qtkeychain inkscape pkg-config libp11
+
+      # KDSingleApplication isn't in Homebrew core. Build it from source —
+      # tiny Qt-based library (~30s build), needed by nextcloud/desktop's
+      # CMakeLists.txt:260 find_package(KDSingleApplication-qt6 REQUIRED).
+      - name: Build KDSingleApplication from source
+        env:
+          QT_DIR: /opt/homebrew/opt/qt@6
+        run: |
+          set -e
+          git clone --depth 1 https://github.com/KDAB/KDSingleApplication.git /tmp/KDSingleApplication
+          cd /tmp/KDSingleApplication
+          cmake -B build -DCMAKE_PREFIX_PATH="$QT_DIR" -DCMAKE_INSTALL_PREFIX=/opt/homebrew -DKDSingleApplication_QT6=ON -DKDSingleApplication_TESTS=OFF -DKDSingleApplication_DOCS=OFF -DKDSingleApplication_EXAMPLES=OFF
+          cmake --build build --parallel
+          sudo cmake --install build
 
       - name: Configure with cmake
         env:
