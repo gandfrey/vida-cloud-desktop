@@ -4,6 +4,9 @@ name: Windows Build and Test
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [master]
+  workflow_dispatch:
 jobs:
   build:
     name: Windows Build and Test
