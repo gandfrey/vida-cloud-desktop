@@ -39,11 +39,17 @@ jobs:
         with:
           arch: x64
 
-      - name: Install OpenSSL 3
+      - name: Use pre-installed OpenSSL on windows-2022
         shell: pwsh
         run: |
-          choco install openssl --version=3.5.2 --no-progress -y
-          echo "OPENSSL_ROOT_DIR=C:/Program Files/OpenSSL-Win64" >> $env:GITHUB_ENV
+          # GitHub's windows-2022 image ships with OpenSSL at C:\Program Files\OpenSSL\.
+          # Don't install via choco — that pins to a specific version that 404s on slproweb.
+          if (-not (Test-Path "C:\Program Files\OpenSSL\bin\openssl.exe")) {
+            Write-Host "Pre-installed OpenSSL not found, falling back to choco"
+            choco install openssl --no-progress -y
+          }
+          echo "OPENSSL_ROOT_DIR=C:/Program Files/OpenSSL" >> $env:GITHUB_ENV
+          & "C:\Program Files\OpenSSL\bin\openssl.exe" version
 
       - name: Install ECM + Inkscape
         shell: pwsh
