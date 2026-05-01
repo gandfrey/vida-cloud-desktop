@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 Vida Design / Jacob McNeill
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Build Vida Cloud desktop client binaries (unsigned) on every push to master.
+# Linux AppImage uses upstream Nextcloud's prebuilt Qt6 Docker image so all
+# heavy deps are cached. macOS + Windows are intentionally separate workflows
+# (linux-appimage.yml, macos-craft-ci.yml, windows-build-and-test.yml) — those
+# trigger on PR; this one runs Linux on every commit so brand-config changes
+# show up as a downloadable .AppImage artifact within ~15 min.
+name: Build Vida Cloud Linux AppImage
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  linux-appimage:
+    name: Linux AppImage (unsigned)
+    runs-on: ubuntu-latest
+    container: ghcr.io/nextcloud/continuous-integration-client-appimage-qt6:client-appimage-el8-6.10.1-1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build AppImage
+        id: build
+        env:
+          APPNAME: VidaCloud
+          EXECUTABLE_NAME: vidacloud
+          BUILDNR: ${{ github.run_id }}
+          VERSION_SUFFIX: vida-${{ github.sha }}
+          BUILD_UPDATER: 'OFF'
+          DESKTOP_CLIENT_ROOT: ${{ github.workspace }}
+          QT_BASE_DIR: /root/linux-gcc-x86_64
+        run: |
+          set -e
+          cd "$DESKTOP_CLIENT_ROOT"
+          /bin/bash ./admin/linux/build-appimage.sh
+
+      - name: Upload AppImage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vida-cloud-linux-${{ github.run_id }}
+          path: |
+            ${{ steps.build.outputs.APPIMAGE_NAME }}
+            *.AppImage
+            build/*.AppImage
+          if-no-files-found: warn
+          retention-days: 30
