@@ -30,7 +30,7 @@ jobs:
         run: |
           brew update
           brew install qt@6 openssl@3 cmake ninja libzip extra-cmake-modules \
-                       qt-keychain inkscape pkg-config
+                       qtkeychain inkscape pkg-config
 
       - name: Configure with cmake
         env:
