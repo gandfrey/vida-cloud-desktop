@@ -26,7 +26,7 @@ set( APPLICATION_VENDOR     "Vida Design" )
 set( APPLICATION_UPDATE_URL "https://updates.vidatools.com/client/" CACHE STRING "URL for updater" )
 set( APPLICATION_HELP_URL   "https://vidatools.com/help/cloud/" CACHE STRING "URL for the help menu" )
 
-if(APPLE AND APPLICATION_NAME STREQUAL "Vida Cloud" AND EXISTS "${CMAKE_SOURCE_DIR}/theme/colored/Nextcloud-macOS-icon.svg")
+if(APPLE AND APPLICATION_NAME STREQUAL "Vida Cloud" AND EXISTS "${CMAKE_SOURCE_DIR}/theme/colored/VidaCloud-macOS-icon.svg")
     set( APPLICATION_ICON_NAME "VidaCloud-macOS" )
     message("Using macOS-specific application icon: ${APPLICATION_ICON_NAME}")
 endif()
