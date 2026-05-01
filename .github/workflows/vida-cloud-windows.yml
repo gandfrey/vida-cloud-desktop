@@ -32,7 +32,7 @@ jobs:
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2022_64'
-          modules: 'qtwebsockets qtwebchannel qt5compat qtshadertools qtdeclarative qtsvg qttools qtpositioning qtquick3d'
+          modules: 'qt5compat qtshadertools qtwebsockets qtwebchannel'
 
       - name: Set up MSVC env
         uses: ilammy/msvc-dev-cmd@v1
