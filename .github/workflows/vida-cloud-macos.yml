@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 Vida Design / Jacob McNeill
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# macOS build of Vida Cloud desktop client. Unsigned (no Apple Developer
+# Team ID configured yet). Uses Homebrew Qt6 + OpenSSL instead of upstream's
+# Craft framework — much faster (~15 min) but no Sparkle auto-updater
+# integration. That's fine for MVP; we add signing + Sparkle when Apple Dev
+# membership is in place.
+#
+# Output: vidacloud-<sha>-macos-arm64.dmg as a build artifact.
+name: Build Vida Cloud macOS DMG (unsigned)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: macOS DMG (unsigned)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Install build deps
+        run: |
+          brew update
+          brew install qt@6 openssl@3 cmake ninja libzip extra-cmake-modules \
+                       qt-keychain inkscape pkg-config
+
+      - name: Configure with cmake
+        env:
+          QT_DIR: /opt/homebrew/opt/qt@6
+          OPENSSL_ROOT_DIR: /opt/homebrew/opt/openssl@3
+        run: |
+          cmake -G Ninja -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$QT_DIR;/opt/homebrew" \
+            -DOPENSSL_ROOT_DIR="$OPENSSL_ROOT_DIR" \
+            -DBUILD_UPDATER=OFF \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Bundle .app + .dmg
+        env:
+          QT_DIR: /opt/homebrew/opt/qt@6
+        run: |
+          set -e
+          cmake --install build
+          # find the .app bundle
+          APP_PATH=$(find install build -maxdepth 4 -name "*.app" -type d | head -1)
+          echo "APP_PATH=$APP_PATH"
+          ls -la "$APP_PATH" || (echo "no .app found"; find install build -maxdepth 4 -type d | head -50; exit 1)
+          # macdeployqt to bundle Qt frameworks + create DMG
+          "$QT_DIR/bin/macdeployqt" "$APP_PATH" -dmg -verbose=2
+          DMG=$(find . -maxdepth 4 -name "*.dmg" | head -1)
+          echo "DMG=$DMG"
+          mv "$DMG" "vidacloud-${GITHUB_SHA::7}-macos-arm64.dmg"
+          ls -la *.dmg
+
+      - name: Upload DMG
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vida-cloud-macos-${{ github.run_id }}
+          path: |
+            *.dmg
+          if-no-files-found: warn
+          retention-days: 30
